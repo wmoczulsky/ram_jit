@@ -1,5 +1,10 @@
 use std::fs;
+use std::collections::HashMap;
 use super::*;
+
+// TODO labels pointing at the end of program are lost
+
+
 
 fn try_parse_op(arg_str: &str) -> Result<Op, String> {
     match arg_str.chars().next() {
@@ -26,7 +31,7 @@ fn try_parse_op(arg_str: &str) -> Result<Op, String> {
 fn try_parse_label(arg_str: &str) -> Result<Label, String> {
     match arg_str.len() {
         0 => Err(String::from("Label not provided")),
-        _ => Ok(Label{text: String::from(arg_str)}),
+        _ => Ok(Label{text: String::from(arg_str), stmt: None}),
     }
 }
 
@@ -59,7 +64,7 @@ fn parse_line(line_raw: &str) -> Result<(Option<Label>, Option<Instr>), String> 
         Some(text) if text.ends_with(":") => { 
             let mut label = (*text).to_string();
             label.truncate(label.len() - 1);
-            label_opt = Some(Label {text: label});
+            label_opt = Some(Label {text: label, stmt: None});
             tokens.next();
         }
         _ => ()
@@ -99,17 +104,41 @@ impl Program {
         }
         Ok(Program{stmts: stmts})
     }
-}
+
+    fn link_labels_to_statements(mut self) -> Result<Self, String> {
+        let mut label_to_statement = HashMap::<String, usize>::new();
+
+        for (stmt, i) in self.stmts.iter().zip(0..) {
+            for label in stmt.labels.iter() {
+                label_to_statement.insert(label.text.clone(), i);
+            }
+        }
+
+        for stmt in self.stmts.iter_mut() {
+            match &mut stmt.instr {
+                Instr::Jump(label) | Instr::Jgtz(label) | Instr::Jzero(label) => {
+                    match label_to_statement.get(label.text.as_str()) {
+                        Some(i) => { label.stmt = Some(*i) }
+                        None => return Err(format!("Undefined label \"{:?}\"", label))
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        Ok(self)
+    }
+ }
+ 
+
 
 fn read(file: &str) -> String {
     fs::read_to_string(file).expect("Couldn't open file")
 }
 
-fn make_ast(data: String) -> Result<Program, String> {
-    Program::try_from(data)
-}
 
 pub fn parse(file: &str) -> Result<Program, String> {
     let content = read(file);
-    make_ast(content)
+    let p = Program::try_from(content)?;
+    Ok(p.link_labels_to_statements()?)
 }

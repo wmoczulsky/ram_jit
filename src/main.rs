@@ -14,8 +14,9 @@ pub enum Op {
 }
 
 #[derive(Debug, Clone)]
-pub struct Label {
+pub struct Label { // TODO data is redundant
     text: String,
+    stmt: Option<usize>,
 }
 
 #[derive(Debug, Clone)]
