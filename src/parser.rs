@@ -102,6 +102,10 @@ impl Program {
                 None => ()
             }
         }
+
+        // add Halt at the end, so each program ends with halt and all labels point to something
+        stmts.push(Stmt{instr: Instr::Halt(), labels:(labels.clone()), pos: 0});  
+        
         Ok(Program{stmts: stmts})
     }
 
@@ -119,7 +123,7 @@ impl Program {
                 Instr::Jump(label) | Instr::Jgtz(label) | Instr::Jzero(label) => {
                     match label_to_statement.get(label.text.as_str()) {
                         Some(i) => { label.stmt = Some(*i) }
-                        None => return Err(format!("Undefined label \"{:?}\"", label))
+                        None => return Err(format!("Undefined label \"{:?}\"", label.text))
                     }
                 }
                 _ => {}
