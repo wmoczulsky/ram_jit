@@ -1,3 +1,4 @@
+use std::fs;
 use super::*;
 
 fn try_parse_op(arg_str: &str) -> Result<Op, String> {
@@ -22,14 +23,14 @@ fn try_parse_op(arg_str: &str) -> Result<Op, String> {
     }
 }
 
-fn try_parse_label<'a>(arg_str: &str) -> Result<Label<'a>, String> {
+fn try_parse_label(arg_str: &str) -> Result<Label, String> {
     match arg_str.len() {
         0 => Err(String::from("Label not provided")),
-        _ => Ok(Label{text: String::from(arg_str), stmt: None}),
+        _ => Ok(Label{text: String::from(arg_str)}),
     }
 }
 
-fn parse_instr<'a>(instr_str: &str, arg_str: &str) -> Result<Instr<'a>, String> {
+fn parse_instr(instr_str: &str, arg_str: &str) -> Result<Instr, String> {
     match instr_str.to_lowercase().as_str() {
         "load" => Ok(Instr::Load(try_parse_op(arg_str)?)),
         "store" => Ok(Instr::Store(try_parse_op(arg_str)?)),
@@ -58,7 +59,7 @@ fn parse_line(line_raw: &str) -> Result<(Option<Label>, Option<Instr>), String> 
         Some(text) if text.ends_with(":") => { 
             let mut label = (*text).to_string();
             label.truncate(label.len() - 1);
-            label_opt = Some(Label {text: label, stmt: None});
+            label_opt = Some(Label {text: label});
             tokens.next();
         }
         _ => ()
@@ -74,8 +75,8 @@ fn parse_line(line_raw: &str) -> Result<(Option<Label>, Option<Instr>), String> 
 
 }
 
-impl<'a> Program<'a> {
-    fn try_from(s: &'a str) -> Result<Self, String> {
+impl Program {
+    fn try_from(s: String) -> Result<Self, String> {
         let mut labels = Vec::new();
         let mut stmts = Vec::new();
         let lines = s.lines();
@@ -100,8 +101,15 @@ impl<'a> Program<'a> {
     }
 }
 
+fn read(file: &str) -> String {
+    fs::read_to_string(file).expect("Couldn't open file")
+}
 
+fn make_ast(data: String) -> Result<Program, String> {
+    Program::try_from(data)
+}
 
-pub fn parse<'a>(file_content: &'a str) -> Result<Program, String> {
-    Program::try_from(&file_content)
+pub fn parse(file: &str) -> Result<Program, String> {
+    let content = read(file);
+    make_ast(content)
 }
