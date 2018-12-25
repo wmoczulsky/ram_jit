@@ -1,4 +1,3 @@
-use std::fs;
 use super::*;
 
 fn try_parse_op(arg_str: &str) -> Result<Op, String> {
@@ -23,14 +22,14 @@ fn try_parse_op(arg_str: &str) -> Result<Op, String> {
     }
 }
 
-fn try_parse_label(arg_str: &str) -> Result<Label, String> {
+fn try_parse_label<'a>(arg_str: &str) -> Result<Label<'a>, String> {
     match arg_str.len() {
         0 => Err(String::from("Label not provided")),
-        _ => Ok(Label{text: String::from(arg_str)}),
+        _ => Ok(Label{text: String::from(arg_str), stmt: None}),
     }
 }
 
-fn parse_instr(instr_str: &str, arg_str: &str) -> Result<Instr, String> {
+fn parse_instr<'a>(instr_str: &str, arg_str: &str) -> Result<Instr<'a>, String> {
     match instr_str.to_lowercase().as_str() {
         "load" => Ok(Instr::Load(try_parse_op(arg_str)?)),
         "store" => Ok(Instr::Store(try_parse_op(arg_str)?)),
@@ -59,7 +58,7 @@ fn parse_line(line_raw: &str) -> Result<(Option<Label>, Option<Instr>), String> 
         Some(text) if text.ends_with(":") => { 
             let mut label = (*text).to_string();
             label.truncate(label.len() - 1);
-            label_opt = Some(Label {text: label});
+            label_opt = Some(Label {text: label, stmt: None});
             tokens.next();
         }
         _ => ()
@@ -75,8 +74,8 @@ fn parse_line(line_raw: &str) -> Result<(Option<Label>, Option<Instr>), String> 
 
 }
 
-impl Program {
-    fn try_from(s: String) -> Result<Self, String> {
+impl<'a> Program<'a> {
+    fn try_from(s: &'a str) -> Result<Self, String> {
         let mut labels = Vec::new();
         let mut stmts = Vec::new();
         let lines = s.lines();
@@ -101,15 +100,8 @@ impl Program {
     }
 }
 
-fn read(file: &str) -> String {
-    fs::read_to_string(file).expect("Couldn't open file")
-}
 
-fn make_ast(data: String) -> Result<Program, String> {
-    Program::try_from(data)
-}
 
-pub fn parse(file: &str) -> Result<Program, String> {
-    let content = read(file);
-    make_ast(content)
+pub fn parse<'a>(file_content: &'a str) -> Result<Program, String> {
+    Program::try_from(&file_content)
 }

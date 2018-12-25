@@ -1,4 +1,5 @@
 use std::env;
+use std::fs;
 
 mod parser;
 
@@ -14,12 +15,13 @@ pub enum Op {
 }
 
 #[derive(Debug, Clone)]
-pub struct Label {
+pub struct Label<'a> {
     text: String,
+    stmt: Option<&'a Stmt<'a>>,
 }
 
 #[derive(Debug, Clone)]
-pub enum Instr {
+pub enum Instr<'a> {
     Load(Op),
     Store(Op),
     Add(Op),
@@ -28,23 +30,23 @@ pub enum Instr {
     Div(Op),
     Read(Op),
     Write(Op),
-    Jump(Label),
-    Jgtz(Label),
-    Jzero(Label),
+    Jump(Label<'a>),
+    Jgtz(Label<'a>),
+    Jzero(Label<'a>),
     Halt(),
 }
 
 
 #[derive(Debug, Clone)]
-pub struct Stmt {
+pub struct Stmt<'a> {
     pos: usize,
-    instr: Instr,
-    labels: Vec<Label>,
+    instr: Instr<'a>,
+    labels: Vec<Label<'a>>,
 }
 
 #[derive(Debug, Clone)]
-pub struct Program {
-    stmts: Vec<Stmt>,
+pub struct Program<'a> {
+    stmts: Vec<Stmt<'a>>,
 }
 
 struct Config {
@@ -54,11 +56,16 @@ struct Config {
 
 
 
+fn read(file: &str) -> String {
+    fs::read_to_string(file).expect("Couldn't open file")
+}
 
 
 fn run(cfg: &Config) {
+    let content = read(&cfg.code_file);
+
     eprintln!("executing {}", &cfg.code_file);
-    match parser::parse(&cfg.code_file) {
+    match parser::parse(&content) {
         Ok(program) => println!("{:#?}", program),
         Err(e) => eprintln!("Unable to parse: {}", e),
     }
@@ -68,6 +75,7 @@ fn run(cfg: &Config) {
 fn help() {
     eprintln!("please provide one argument, which is filename");
 }
+
 
 
 fn main() {
