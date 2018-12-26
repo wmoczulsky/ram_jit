@@ -7,12 +7,32 @@ use std::io;
 
 pub type T = i64;
 
+
+#[derive(Debug, Clone)]
+pub enum OpMem {
+    Memory(T),
+    Pointer(T),
+}
+
 #[derive(Debug, Clone)]
 pub enum Op {
     Integer(T),
-    Memory(T),
-    Pointer(T),
+    Mem(OpMem),
+}
 
+impl Op {
+    fn to_op_mem(self) -> Result<OpMem, String> {
+        match self {
+            Op::Integer(_) => Err("Expected memory address or reference (x or ^x), constant integer given (=x)".into()),
+            Op::Mem(op_mem) => Ok(op_mem),
+        }
+    }
+}
+
+impl OpMem {
+    fn to_op(self) -> Op {
+        Op::Mem(self)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -24,12 +44,12 @@ pub struct Label { // TODO data is redundant
 #[derive(Debug, Clone)]
 pub enum Instr {
     Load(Op),
-    Store(Op),
+    Store(OpMem),
     Add(Op),
     Sub(Op),
     Mult(Op),
     Div(Op),
-    Read(Op),
+    Read(OpMem),
     Write(Op),
     Jump(Label),
     Jgtz(Label),

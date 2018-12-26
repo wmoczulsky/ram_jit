@@ -16,12 +16,12 @@ fn try_parse_op(arg_str: &str) -> Result<Op, String> {
         },
         Some('^') if arg_str.len() > 1 => {
             match arg_str.get(1..).unwrap().parse::<T>() {
-                Ok(num) => Ok(Op::Pointer(num)),
+                Ok(num) => Ok(Op::Mem(OpMem::Pointer(num))),
                 Err(_) => Err("Invalid operand".into()),
             }
         },
         Some(_) => match arg_str.parse::<T>() {
-                Ok(num) => Ok(Op::Memory(num)),
+                Ok(num) => Ok(Op::Mem(OpMem::Memory(num))),
                 Err(_) => Err("Invalid operand".into()),
         },
         _ => Err("Invalid operand".into())
@@ -38,12 +38,12 @@ fn try_parse_label(arg_str: &str) -> Result<Label, String> {
 fn parse_instr(instr_str: &str, arg_str: &str) -> Result<Instr, String> {
     match instr_str.to_lowercase().as_str() {
         "load" => Ok(Instr::Load(try_parse_op(arg_str)?)),
-        "store" => Ok(Instr::Store(try_parse_op(arg_str)?)),
+        "store" => Ok(Instr::Store(try_parse_op(arg_str)?.to_op_mem()?)),
         "add" => Ok(Instr::Add(try_parse_op(arg_str)?)),
         "sub" => Ok(Instr::Sub(try_parse_op(arg_str)?)),
         "mult" => Ok(Instr::Mult(try_parse_op(arg_str)?)),
         "div" => Ok(Instr::Div(try_parse_op(arg_str)?)),
-        "read" => Ok(Instr::Read(try_parse_op(arg_str)?)),
+        "read" => Ok(Instr::Read(try_parse_op(arg_str)?.to_op_mem()?)),
         "write" => Ok(Instr::Write(try_parse_op(arg_str)?)),
         "jump" => Ok(Instr::Jump(try_parse_label(arg_str)?)),
         "jgtz" => Ok(Instr::Jgtz(try_parse_label(arg_str)?)),
