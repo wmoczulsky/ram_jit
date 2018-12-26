@@ -2,10 +2,6 @@ use std::fs;
 use std::collections::HashMap;
 use super::*;
 
-// TODO labels pointing at the end of program are lost
-
-
-
 fn try_parse_op(arg_str: &str) -> Result<Op, String> {
     match arg_str.chars().next() {
         Some('=') if arg_str.len() > 1 => {
