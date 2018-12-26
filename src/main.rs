@@ -1,6 +1,8 @@
 use std::env;
 
 mod parser;
+mod vm;
+use std::io;
 
 
 pub type T = i64;
@@ -38,7 +40,7 @@ pub enum Instr {
 
 #[derive(Debug, Clone)]
 pub struct Stmt {
-    pos: usize,
+    pos: usize, // position in source code
     instr: Instr,
     labels: Vec<Label>,
 }
@@ -55,14 +57,31 @@ struct Config {
 
 
 
+fn get_input() -> Vec<T> {
+    let mut a_str = String::new();
 
+    io::stdin().read_line(&mut a_str).expect("read error");
 
-fn run(cfg: &Config) {
+    a_str.split_whitespace()
+        .map(|x| x.parse::<T>().expect("input parse error"))
+        .collect::<Vec<T>>()
+}
+
+fn run(cfg: &Config) -> Result<(), String> {
     eprintln!("executing {}", &cfg.code_file);
-    match parser::parse(&cfg.code_file) {
-        Ok(program) => println!("{:#?}", program),
-        Err(e) => eprintln!("Unable to parse: {}", e),
-    }
+
+    let program = parser::parse(&cfg.code_file)?;
+
+    // let program = match parser::parse(&cfg.code_file) {
+    //     Ok(p) => p,
+    //     Err(e) => { return Err(format!("Unable to parse: {}", e)) }
+    // };
+
+    println!("{:#?}", program);
+
+    vm::execute(program, get_input())?;
+
+    Ok(())
 }
 
 
@@ -76,7 +95,10 @@ fn main() {
     
     match args.len() {
         2 => {
-            run(&Config {code_file: args[1].clone()})
+            match run(&Config {code_file: args[1].clone()}) {
+                Err(e) => eprintln!("{}", e),
+                _ => ()
+            }
         },
         _ => help()
     }
